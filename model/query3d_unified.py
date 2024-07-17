@@ -1,3 +1,32 @@
+from copy import copy
+from functools import partial
+import torch
+import torch.nn as nn
+import MinkowskiEngine as ME
+from data.datasets.constant import PromptType
+
+from modules.build import build_module_by_name
+from modules.utils import calc_pairwise_locs
+from model.build import MODEL_REGISTRY, BaseModel
+from optim.utils import no_decay_param_group
+from modules.third_party.mask3d.position_embedding import PositionEmbeddingCoordsSine
+from torch.cuda.amp import autocast
+
+class CoordinateEncoder(nn.Module):
+    def __init__(self, hidden_size, use_projection=True):
+        super().__init__()
+        self.pos_enc = PositionEmbeddingCoordsSine(pos_type="fourier", d_pos=hidden_size, gauss_scale=1.0, normalize=True)
+        if use_projection:
+            self.feat_proj = nn.Sequential(nn.Linear(hidden_size, hidden_size), nn.LayerNorm(hidden_size))
+    
+    def forward(self, coords, input_range):
+        with autocast(enabled=False):
+            pos = self.pos_enc(coords, input_range=input_range).permute(0, 2, 1)
+        if hasattr(self, 'feat_proj'):
+            pos = self.feat_proj(pos)
+        return pos
+            
+@MODEL_REGISTRY.register()
 class Query3DUnified(BaseModel):
     def __init__(self, cfg):
         super().__init__(cfg)
