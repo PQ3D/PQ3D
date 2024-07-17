@@ -41,7 +41,7 @@ This repository is the official implementation of the ECCV 2024 paper "Unifying 
 </div>
 
 ### News
-
+- [ 2024.07 ] Our huggingface DEMO is here [DEMO](https://huggingface.co/spaces/li-qing/PQ3D-Demo), welcome to try our model!
 - [ 2024.07 ] Release codes of model! TODO: Clean up training and evaluation
 
 ### Abstract
