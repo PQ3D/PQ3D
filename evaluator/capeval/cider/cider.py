@@ -54,11 +54,3 @@ class Cider:
 
     def method(self):
         return "CIDEr"
-
-if __name__ == "__main__":
-    x = Cider()
-    with open("/home/zhuziyu/work/vlpr/3dVL/scan2cap_result.json", 'r') as f:
-        json_file = json.load(f)
-        #print(json_file['gt_sentence_mp'])
-        #print(x.compute_score({"scene_001": ["This is a chair"], "scene_002": ["That is a book"]}, {"scene_001": ["This is a chair"], "scene_002": ["That is a book"]}))
-        print(x.compute_score(json_file['gt_sentence_mp'], json_file['pred_sentence_mp']))

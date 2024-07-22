@@ -30,11 +30,11 @@
 
 This repository is the official implementation of the ECCV 2024 paper "Unifying 3D Vision-Language Understanding via Promptable Queries".
 
-[Paper](https://arxiv.org/pdf/2308.04352.pdf) |
-[arXiv](https://arxiv.org/abs/2308.04352) |
-[Project](https://3d-vista.github.io/) |
-[HuggingFace Demo](https://huggingface.co/spaces/SceneDiffuser/SceneDiffuserDemo) |
-[Checkpoints](https://drive.google.com/drive/folders/1UZ5V9VbPCU-ikiyj6NI4LyMssblwr1LC?usp=share_link)
+[Paper](https://arxiv.org/abs/2405.11442) |
+[arXiv](https://arxiv.org/abs/2405.11442) |
+[Project](https://pq3d.github.io) |
+[HuggingFace Demo](https://huggingface.co/spaces/li-qing/PQ3D-Demo) |
+[Checkpoints]()
 
 <div align=center>
 <img src='https://pq3d.github.io/file/teaser.png' width=100%>
@@ -51,26 +51,44 @@ A unified model for 3D vision-language (3D-VL) understanding is expected to take
 ### Install
 1. Install conda package
 ```
-conda env create --name envname --file=environments.yml
+conda env create --name envname 
+pip3 install torch==2.0.0
+pip3 install torchvision==0.15.1
+pip3 install -r requirements.txt
 ```
 
 2. install pointnet2
 ```
-TODO
+cd modules/third_party
+# PointNet2
+cd pointnet2
+python setup.py install
+cd ..
 ```
 
 3. Install Minkowski Engine
 ```
-TODO
+git clone https://github.com/NVIDIA/MinkowskiEngine.git
+conda install openblas-devel -c anaconda
+cd MinkowskiEngine
+python setup.py install --blas_include_dirs=${CONDA_PREFIX}/include --blas=openblas
 ```
 
 ### Prepare data
+TODO
 
 ### Prepare checkpoints
+download all checkpoint and use pretrain_ckpt_path={checkpoint_path} to ;pad checkpoint
 
 ### Run PQ3D
 ```
-TODO
+python3 run.py --config-path configs --config-name config-name.yaml
+```
+for multi-gpu training use
+```
+python launch.py --mode ${launch_mode} \
+    --qos=${qos} --partition=${partition} --gpu_per_node=4 --port=29512 --mem_per_gpu=80 \
+    --config {config}  \
 ```
 
 ### Acknowledgement
