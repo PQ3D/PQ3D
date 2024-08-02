@@ -13,7 +13,7 @@
     <a href='https://huggingface.co/spaces/li-qing/PQ3D-Demo'>
       <img src='https://img.shields.io/badge/Demo-HuggingFace-yellow?style=plastic&logo=AirPlay%20Video&logoColor=yellow' alt='HuggigFace'>
     </a>
-    <a href=''>
+    <a href='https://drive.google.com/drive/folders/1MDt9yaco_TllGfqqt76UOxMV1JMMVsji?usp=share_link'>
       <img src='https://img.shields.io/badge/Model-Checkpoints-orange?style=plastic&logo=Google%20Drive&logoColor=orange' alt='Checkpoints(TODO)'>
     </a>
 </p>
@@ -34,13 +34,14 @@ This repository is the official implementation of the ECCV 2024 paper "Unifying 
 [arXiv](https://arxiv.org/abs/2405.11442) |
 [Project](https://pq3d.github.io) |
 [HuggingFace Demo](https://huggingface.co/spaces/li-qing/PQ3D-Demo) |
-[Checkpoints]()
+[Checkpoints](https://drive.google.com/drive/folders/1MDt9yaco_TllGfqqt76UOxMV1JMMVsji?usp=share_link)
 
 <div align=center>
 <img src='https://pq3d.github.io/file/teaser.png' width=100%>
 </div>
 
 ### News
+- [ 2024.08 ] Release training and evaluation.
 - [ 2024.07 ] Our huggingface DEMO is here [DEMO](https://huggingface.co/spaces/li-qing/PQ3D-Demo), welcome to try our model!
 - [ 2024.07 ] Release codes of model! TODO: Clean up training and evaluation
 
@@ -75,16 +76,35 @@ python setup.py install --blas_include_dirs=${CONDA_PREFIX}/include --blas=openb
 ```
 
 ### Prepare data
-TODO
+1. download sceneverse data  from [scene_verse_base](https://github.com/scene-verse/sceneverse?tab=readme-ov-file) and change `data.scene_verse_base` to sceneverse data directory.
+2. download segment level data from [scene_ver_aux](https://drive.google.com/drive/folders/1em0G5S4aH4lCIfnjLxyFO3DV3Rwuwnqh?usp=share_link) and change `data.scene_verse_aux` to download data directory.
+3. download other data from [scene_verse_pred](https://drive.google.com/drive/folders/12BjbhXzV7lON4X0tx3e7DdvZHhI1Q1f2?usp=share_link) and change `data.scene_verse_pred` to download data directory.
 
 ### Prepare checkpoints
-download all checkpoint and use pretrain_ckpt_path={checkpoint_path} to ;pad checkpoint
+1. download PointNet++ from [pointnet](https://drive.google.com/drive/folders/1KSu2z9cOMocQg5yYKUTlk0TlDwJZQMKs?usp=share_link) and change `pretrained_weights_dir` to downloaded directory,
+2. download checkpoint from [stage1](https://drive.google.com/drive/folders/1KHayAzF7XlE3R3cz4YUPoHY_1VJkKYpd?usp=share_link), [stage2](https://drive.google.com/drive/folders/1MDt9yaco_TllGfqqt76UOxMV1JMMVsji?usp=share_link) and change pretrain_ckpt_path to certain checkpoint weight.
 
 ### Run PQ3D
+Stage 1 training for instance segmentation
 ```
-python3 run.py --config-path configs --config-name config-name.yaml
+python3 run.py --config-path configs --config-name instseg_sceneverse_gt.yaml
 ```
-for multi-gpu training use
+```
+python3 run.py --config-path configs --config-name instseg_sceneverse.yaml pretrain_ckpt={ckpt_from_instseg_sceneverser_gt}
+```
+Stage 1 evaluation
+```
+python3 run.py --config-path configs --config-name instseg_sceneverse.yaml mode=test pretrain_ckp_path={pretrain_ckpt_path}
+```
+Stage 2 training for vl tasks
+```
+python3 run.py --config-path configs --config-name unified_tasks_sceneverse.yaml
+```
+Stage 2 evaluation
+```
+python3 run.py --config-path configs --config-name unified_tasks_sceneverse.yaml mode=test pretrain_ckpt_path={pretrain_ckpt_path}
+```
+For multi-gpu training usage, we use four GPU in our experiments.
 ```
 python launch.py --mode ${launch_mode} \
     --qos=${qos} --partition=${partition} --gpu_per_node=4 --port=29512 --mem_per_gpu=80 \

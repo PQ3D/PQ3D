@@ -1,0 +1,175 @@
+# Experiment general info
+name: "Query-based-VL"
+base_dir: "outputs"
+exp_dir: ""
+note: ""
+naming_keywords: ["note", "time"]
+
+rng_seed: 42
+num_gpu: 1
+mode: "train"
+
+resume: False
+pretrain_ckpt_path: ''
+
+debug:
+  flag: False
+  debug_size: 10
+
+logger:
+  name: wandb
+  entity: TBD
+  autoname: True
+
+# dataset details
+data:
+  train: ['ScanNetInstSegSceneVerse']
+  val: ['ScanNetInstSegSceneVerse']
+  test: ['ScanNetInstSegSceneVerse']
+
+  load_scan_options:
+    load_inst_info: True
+    load_pc_info: True
+    load_segment_info: True
+    load_image_segment_feat: True
+    load_point_segment_feat: True
+    load_image_obj_feat: False
+    load_voxel_obj_feat: False
+  
+  instseg_options:
+    num_labels: 200
+    ignore_label: -100
+    filter_out_classes: [0, 2]
+    voxel_size: 0.02
+    num_queries: 120
+    query_sample_strategy: 'gt'
+    offline_mask_source: 'gt'
+    image_augmentations_path: configs/instseg/augmentation/albumentations_aug.yaml
+    volume_augmentations_path: configs/instseg/augmentation/volumentations_aug.yaml
+
+  scene_verse_base: TBD
+  scene_verse_aux: TBD
+  scene_verse_pred:  TBD
+
+# dataloader details
+dataloader:
+  # This is a per-gpu batchsize
+  batchsize: 4
+  batchsize_eval: 1
+  num_workers: 4
+  
+task: InstSeg
+data_wrapper: InstSegDatasetWrapper
+
+# Training details
+trainer: Query3DTrainer
+
+solver:
+  gradient_accumulation_steps: 1
+  lr: 1e-4
+  grad_norm: 80
+  epochs: 200
+  epochs_per_eval: 50
+  optim:
+    name: AdamW
+    args:
+      betas: [0.9, 0.98]
+  sched:
+    name: warmup_cosine
+    args:
+      warmup_steps: 0
+
+eval:
+  name: InstSegEval
+  pass_kwargs: True
+  save: False
+  topk_per_scene: 100
+  use_dbscan: False
+  ignore_label: ${data.instseg_options.ignore_label}
+
+pretrained_weights_dir: TBD
+model:
+  name: Query3DUnified
+  memories: [voxel,mv,pc]
+  hidden_size: 768
+  use_offline_voxel_fts: False
+  use_offline_attn_mask: True
+  obj_loc:
+    spatial_dim: 5
+    dim_loc: 3
+    pairwise_rel_type: "center"
+  voxel_encoder:
+    name: PCDMask3DSegLevelEncoder
+    args:
+      backbone_kwargs:
+        config:
+          dialations: [ 1, 1, 1, 1 ]
+          conv1_kernel_size: 5
+          bn_momentum: 0.02
+        in_channels: 3
+        out_channels: 200
+        out_fpn: true
+      freeze_backbone: False # train only the projection layer
+      hlevels: [0,1,2,3]
+      hidden_size: ${model.hidden_size}
+      dropout: 0.1
+
+  mv_encoder:
+    name: ObjectEncoder
+    args:
+      input_feat_size : 768
+      hidden_size: ${model.hidden_size}
+      use_projection: True
+      use_cls_head: False
+      dropout: 0.1
+
+  pc_encoder:
+    name: ObjectEncoder
+    args:
+      input_feat_size : 768
+      hidden_size: ${model.hidden_size}
+      use_projection: True
+      use_cls_head: False
+      dropout: 0.1
+
+  unified_encoder:
+    name: QueryMaskEncoder
+    args:
+      hidden_size: ${model.hidden_size}
+      num_attention_heads: 12
+      num_layers: 4
+      spatial_selfattn: True
+      memories: ${model.memories}
+      structure: "parallel"
+      use_self_mask: true
+      num_blocks: 3
+
+  heads: [mask]
+  mask_head:
+    name: "MaskHeadSegLevel"
+    args:
+      hidden_size: ${model.hidden_size}
+      num_targets: 201
+      memories_for_match: ${model.memories}
+      filter_out_classes: ${data.instseg_options.filter_out_classes}
+  
+  loss_list: [InstSegLoss]
+  vis_loss_list: []
+
+  InstSegLoss:
+    criterion_type: 'direct'
+
+    criterion:
+      num_classes: ${data.instseg_options.num_labels}
+      losses: [labels, masks]
+      num_points: -1
+      class_weights: -1
+      ignore_label: ${data.instseg_options.ignore_label}
+
+    matcher:
+      cost_class: 2.
+      cost_mask: 5.
+      cost_dice: 2.
+      num_points: -1 # use all points for matching
+      ignore_label: ${data.instseg_options.ignore_label}
+
